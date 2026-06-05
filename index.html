@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Command Hub</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Consolas, monospace;
+}
+
+body {
+    background: #0a0a0a;
+    color: #00ff88;
+}
+
+header {
+    background: #000;
+    border-bottom: 2px solid #00ff88;
+    padding: 20px;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    text-shadow: 0 0 10px #00ff88;
+}
+
+.hero {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.hero h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.hero p {
+    color: #cfcfcf;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* When a category is opened, allow command area to expand wider */
+#commandContainer.category-open {
+    max-width: 100%;
+    padding-left: 36px;
+    padding-right: 36px;
+}
+
+.search-box {
+    text-align: center;
+    margin: 20px;
+}
+
+.search-container {
+    position: relative;
+    width: 80%;
+    max-width: 700px;
+    margin: 30px auto;
+}
+
+.search-container input[type="text"] {
+    width: 100%;
+    height: 55px;
+    background: #111;
+    border: 2px solid #00ff88;
+    border-radius: 30px;
+    color: #00ff88;
+    font-size: 16px;
+    padding-left: 20px;
+    padding-right: 60px;
+}
+
+.search-container input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 15px #00ff88;
+}
+
+.section-title {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 2rem;
+}
+
+.category-section {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 120px; /* ensures equal tile height */
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+    .categories-grid {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- COLLAPSIBLE MENU CSS CHANGES START --- */
+.category-title {
+    width: 100%;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    color: #fff;
+    background: red;
+    border: 3px solid #ff0000;
+    padding: 14px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+    user-select: none;
+}
+
+.category-title:hover {
+    color: #000;
+    border-color: #cc0000;
+    background: #ff5555;
+}
+
+/* Add a dropdown arrow icon */
+.category-title::after {
+    content: '▼';
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+/* Flip the arrow when active */
+.category-title.active::after {
+    transform: rotate(180deg);
+}
+
+.command-list {
+    display: none; /* Hide commands by default */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    counter-reset: cmd;
+}
+
+/* Show commands when the active class is added */
+.command-list.active {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(600px, 1fr));
+    gap: 28px;
+}
+
+/* Adjust card padding in two-column active view so content fits nicely */
+.command-list.active .card {
+    padding: 15px 18px 15px 15px;
+}
+
+@media (max-width: 760px) {
+    .command-list.active {
+        grid-template-columns: 1fr;
+    }
+    .command-list.active .card {
+        padding: 15px;
+    }
+}
+/* --- COLLAPSIBLE MENU CSS CHANGES END --- */
+
+.card {
+    background: #111;
+    border: 1px solid #00ff88;
+    border-radius: 10px;
+    padding: 15px 140px 15px 15px; 
+    transition: .3s;
+    position: relative;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px #00ff88;
+}
+
+.command {
+    font-size: 22px;
+    color: #00ff88;
+    margin-bottom: 10px;
+    counter-increment: cmd;
+}
+
+.command::before {
+    content: counter(cmd) ". ";
+    color: red;
+    font-weight: bold;
+    font-size: 24px;
+}
+
+.use {
+    color: #ddd;
+    line-height: 1.6;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 90px;
+    height: 36px;
+    background: red;
+    color: black;
+    font-size: 15px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.copy-btn:hover {
+    background: #ff3333;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px red;
+}
+
+footer {
+    text-align: center;
+    padding: 30px;
+    border-top: 1px solid #00ff88;
+    margin-top: 60px;
+}
+</style>
+</head>
+
+<body>
+<header>
+    <h1>🐧 Linux Command Hub</h1>
+</header>
+
+<section class="hero">
+    <h2>Learn Linux Commands Easily</h2>
+    <p>Beginner Friendly Linux Commands & Uses</p>
+</section>
+
+<div class="search-box">
+    <div class="search-container">
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="🔍 Search Linux Commands..."
+        >
+    </div>
+</div>
+
+<h2 class="section-title">Linux Commands</h2>
+
+<div class="container" id="commandContainer">
+    <div class="categories-grid">
+    <section class="category-section" id="cat-file-dir">
+        <button class="category-title">File & Directory Commands</button>
+        <div class="command-list">
+            <div class="card"><div class="command">pwd</div><div class="use">Current directory ka path dikhata hai.</div></div>
+            <div class="card"><div class="command">ls</div><div class="use">Files aur folders ki list dikhata hai.</div></div>
+            <div class="card"><div class="command">ls -a</div><div class="use">Hidden files bhi dikhata hai.</div></div>
+            <div class="card"><div class="command">cd</div><div class="use">Directory change karne ke liye.</div></div>
+            <div class="card"><div class="command">mkdir</div><div class="use">Naya folder banata hai.</div></div>
+            <div class="card"><div class="command">rmdir</div><div class="use">Empty directory delete karta hai.</div></div>
+            <div class="card"><div class="command">touch</div><div class="use">Nayi file create karta hai.</div></div>
+            <div class="card"><div class="command">cp</div><div class="use">File ya folder copy karta hai.</div></div>
+            <div class="card"><div class="command">mv</div><div class="use">Move ya rename karta hai.</div></div>
+            <div class="card"><div class="command">rm</div><div class="use">File delete karta hai.</div></div>
+            <div class="card"><div class="command">tree</div><div class="use">Directory structure ko tree format me dikhata hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-text-data">
+        <button class="category-title">Text & Data Commands</button>
+        <div class="command-list">
+            <div class="card"><div class="command">cat</div><div class="use">File content show karta hai.</div></div>
+            <div class="card"><div class="command">less</div><div class="use">Badi files ko page by page padhne ke liye use hota hai.</div></div>
+            <div class="card"><div class="command">more</div><div class="use">File content ko page-wise display karta hai.</div></div>
+            <div class="card"><div class="command">grep</div><div class="use">Text search karne ke liye.</div></div>
+            <div class="card"><div class="command">cut</div><div class="use">Text me se specific columns ya fields extract karta hai.</div></div>
+            <div class="card"><div class="command">paste</div><div class="use">Multiple files ki lines ko merge karta hai.</div></div>
+            <div class="card"><div class="command">tr</div><div class="use">Characters ko replace ya delete karta hai.</div></div>
+            <div class="card"><div class="command">awk</div><div class="use">Text processing aur pattern matching ke liye powerful tool hai.</div></div>
+            <div class="card"><div class="command">sed</div><div class="use">Stream editor, text ko search aur replace karta hai.</div></div>
+            <div class="card"><div class="command">fmt</div><div class="use">Text ko formatting aur wrapping karta hai.</div></div>
+            <div class="card"><div class="command">sort</div><div class="use">Data ko alphabetical ya numerical order me sort karta hai.</div></div>
+            <div class="card"><div class="command">uniq</div><div class="use">Duplicate lines remove karta hai.</div></div>
+            <div class="card"><div class="command">wc</div><div class="use">Words, lines aur characters count karta hai.</div></div>
+            <div class="card"><div class="command">strings</div><div class="use">Binary files me readable text dikhata hai.</div></div>
+            <div class="card"><div class="command">fold</div><div class="use">Long lines ko specified width par wrap karta hai.</div></div>
+            <div class="card"><div class="command">expand</div><div class="use">Tabs ko spaces me convert karta hai.</div></div>
+            <div class="card"><div class="command">unexpand</div><div class="use">Spaces ko tabs me convert karta hai.</div></div>
+            <div class="card"><div class="command">column</div><div class="use">Text ko columns me format karta hai.</div></div>
+            <div class="card"><div class="command">nl</div><div class="use">File ki lines ke saath line numbers dikhata hai.</div></div>
+            <div class="card"><div class="command">tee</div><div class="use">Output ko screen aur file dono me save karta hai.</div></div>
+            <div class="card"><div class="command">comm</div><div class="use">Do sorted files compare karta hai.</div></div>
+            <div class="card"><div class="command">join</div><div class="use">Common field ke basis par files join karta hai.</div></div>
+            <div class="card"><div class="command">xargs</div><div class="use">Input ko command arguments me convert karta hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-storage-filesystem">
+        <button class="category-title">Storage & Filesystem Commands</button>
+        <div class="command-list">
+            <div class="card"><div class="command">file</div><div class="use">File ka type identify karta hai.</div></div>
+            <div class="card"><div class="command">df -h</div><div class="use">Disk usage dikhata hai.</div></div>
+            <div class="card"><div class="command">du -h</div><div class="use">Directory aur file size human readable format me dikhata hai.</div></div>
+            <div class="card"><div class="command">free -h</div><div class="use">RAM usage dikhata hai.</div></div>
+            <div class="card"><div class="command">lsblk</div><div class="use">Block devices aur partitions dikhata hai.</div></div>
+            <div class="card"><div class="command">blkid</div><div class="use">Block device UUID aur filesystem type dikhata hai.</div></div>
+            <div class="card"><div class="command">mount</div><div class="use">Filesystem ko mount karta hai.</div></div>
+            <div class="card"><div class="command">umount</div><div class="use">Mounted filesystem ko unmount karta hai.</div></div>
+            <div class="card"><div class="command">dos2unix</div><div class="use">Windows text file ko Unix format me convert karta hai.</div></div>
+            <div class="card"><div class="command">unix2dos</div><div class="use">Unix text file ko Windows format me convert karta hai.</div></div>
+            <div class="card"><div class="command">iconv</div><div class="use">Text encoding convert karta hai.</div></div>
+            <div class="card"><div class="command">chmod</div><div class="use">Permissions change karta hai.</div></div>
+            <div class="card"><div class="command">chown</div><div class="use">Owner change karta hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-system-info">
+        <button class="category-title">System Info & Monitoring</button>
+        <div class="command-list">
+            <div class="card"><div class="command">id</div><div class="use">Current user ki UID, GID aur groups dikhata hai.</div></div>
+            <div class="card"><div class="command">groups</div><div class="use">User ke groups ki list dikhata hai.</div></div>
+            <div class="card"><div class="command">users</div><div class="use">Logged-in users ki list dikhata hai.</div></div>
+            <div class="card"><div class="command">who</div><div class="use">System me currently logged-in users dikhata hai.</div></div>
+            <div class="card"><div class="command">w</div><div class="use">Logged-in users aur unki activities dikhata hai.</div></div>
+            <div class="card"><div class="command">last</div><div class="use">Recent login history dikhata hai.</div></div>
+            <div class="card"><div class="command">lastlog</div><div class="use">Sabhi users ka last login time dikhata hai.</div></div>
+            <div class="card"><div class="command">ps</div><div class="use">Running processes ki list dikhata hai.</div></div>
+            <div class="card"><div class="command">top</div><div class="use">Running processes live dikhata hai.</div></div>
+            <div class="card"><div class="command">htop</div><div class="use">Interactive process monitoring tool hai.</div></div>
+            <div class="card"><div class="command">pstree</div><div class="use">Processes ko tree structure me dikhata hai.</div></div>
+            <div class="card"><div class="command">time</div><div class="use">Command execution time measure karta hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-process-job">
+        <button class="category-title">Process & Job Control</button>
+        <div class="command-list">
+            <div class="card"><div class="command">kill</div><div class="use">Process stop karta hai.</div></div>
+            <div class="card"><div class="command">killall</div><div class="use">Ek naam ke sabhi processes ko terminate karta hai.</div></div>
+            <div class="card"><div class="command">pkill</div><div class="use">Name ya pattern se process kill karta hai.</div></div>
+            <div class="card"><div class="command">pgrep</div><div class="use">Process ID search karta hai.</div></div>
+            <div class="card"><div class="command">jobs</div><div class="use">Current shell ke background jobs dikhata hai.</div></div>
+            <div class="card"><div class="command">bg</div><div class="use">Job ko background me chalata hai.</div></div>
+            <div class="card"><div class="command">fg</div><div class="use">Background job ko foreground me lata hai.</div></div>
+            <div class="card"><div class="command">nohup</div><div class="use">Logout ke baad bhi process chalata rakhta hai.</div></div>
+            <div class="card"><div class="command">watch</div><div class="use">Command ko interval par repeat karta hai.</div></div>
+            <div class="card"><div class="command">nice</div><div class="use">Process priority set karta hai.</div></div>
+            <div class="card"><div class="command">renice</div><div class="use">Running process ki priority change karta hai.</div></div>
+            <div class="card"><div class="command">timeout</div><div class="use">Specified time ke baad command stop karta hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-user-group">
+        <button class="category-title">User & Group Management</button>
+        <div class="command-list">
+            <div class="card"><div class="command">passwd</div><div class="use">User password change karta hai.</div></div>
+            <div class="card"><div class="command">su</div><div class="use">Dusre user account me switch karta hai.</div></div>
+            <div class="card"><div class="command">useradd</div><div class="use">Naya user create karta hai.</div></div>
+            <div class="card"><div class="command">usermod</div><div class="use">Existing user ko modify karta hai.</div></div>
+            <div class="card"><div class="command">userdel</div><div class="use">User account delete karta hai.</div></div>
+            <div class="card"><div class="command">groupadd</div><div class="use">Naya group create karta hai.</div></div>
+            <div class="card"><div class="command">groupdel</div><div class="use">Group delete karta hai.</div></div>
+            <div class="card"><div class="command">gpasswd</div><div class="use">Group passwords aur members manage karta hai.</div></div>
+            <div class="card"><div class="command">newgrp</div><div class="use">Current session ka primary group change karta hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-network-remote">
+        <button class="category-title">Network & Remote Commands</button>
+        <div class="command-list">
+            <div class="card"><div class="command">ping</div><div class="use">Network connectivity test karta hai.</div></div>
+            <div class="card"><div class="command">ssh</div><div class="use">Remote server par secure shell session open karta hai.</div></div>
+            <div class="card"><div class="command">scp</div><div class="use">Remote machine par secure file copy karta hai.</div></div>
+            <div class="card"><div class="command">curl</div><div class="use">Web se data download aur API requests bhejta hai.</div></div>
+            <div class="card"><div class="command">wget</div><div class="use">Web se file download karta hai.</div></div>
+            <div class="card"><div class="command">ip a</div><div class="use">IP Address dikhata hai.</div></div>
+        </div>
+    </section>
+
+    <section class="category-section" id="cat-shell-utility">
+        <button class="category-title">Shell & Utility Commands</button>
+        <div class="command-list">
+            <div class="card"><div class="command">sudo apt update</div><div class="use">Package list update karta hai.</div></div>
+            <div class="card"><div class="command">man</div><div class="use">Command ke manual page ko dekhta hai.</div></div>
+            <div class="card"><div class="command">alias</div><div class="use">Short command shortcuts define karta hai.</div></div>
+            <div class="card"><div class="command">unalias</div><div class="use">Pehle se banaye alias ko remove karta hai.</div></div>
+            <div class="card"><div class="command">history</div><div class="use">Pichle commands ka record dikhata hai.</div></div>
+            <div class="card"><div class="command">nano</div><div class="use">Simple terminal editor hai.</div></div>
+            <div class="card"><div class="command">vim</div><div class="use">Powerful terminal text editor hai.</div></div>
+            <div class="card"><div class="command">locate</div><div class="use">Files ko bahut fast search karta hai.</div></div>
+            <div class="card"><div class="command">which</div><div class="use">Command ka executable path dikhata hai.</div></div>
+            <div class="card"><div class="command">whereis</div><div class="use">Command, source aur manual files ki location dikhata hai.</div></div>
+            <div class="card"><div class="command">diff</div><div class="use">Do files ke differences dikhata hai.</div></div>
+            <div class="card"><div class="command">cmp</div><div class="use">Do files byte by byte compare karta hai.</div></div>
+            <div class="card"><div class="command">patch</div><div class="use">Diff file ke changes apply karta hai.</div></div>
+            <div class="card"><div class="command">git status</div><div class="use">Git repository ki current state dikhata hai.</div></div>
+        </div>
+    </section>
+    </div>
+</div>
+
+<footer>
+    Linux Command Hub © 2026
+</footer>
+
+<script>
+// --- JS CHANGES FOR CATEGORY NAVIGATION START ---
+document.addEventListener("DOMContentLoaded", () => {
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    const categoryTitles = Array.from(document.querySelectorAll('.category-title'));
+    const searchInput = document.getElementById('searchInput');
+    const commandContainer = document.getElementById('commandContainer');
+    let currentOpen = null;
+
+    function showAllCategories() {
+        sections.forEach(s => {
+            s.style.display = 'block';
+            const cl = s.querySelector('.command-list');
+            if (cl) cl.classList.remove('active');
+        });
+        currentOpen = null;
+        if (commandContainer) commandContainer.classList.remove('category-open');
+        history.replaceState(null, null, location.pathname);
+    }
+
+    function openCategory(section) {
+        sections.forEach(s => s.style.display = (s === section ? 'block' : 'none'));
+        const cl = section.querySelector('.command-list');
+        if (cl) cl.classList.add('active');
+        currentOpen = section;
+        if (commandContainer) commandContainer.classList.add('category-open');
+        section.scrollIntoView({behavior:'smooth'});
+        if (section.id) history.replaceState(null, null, '#'+section.id);
+    }
+
+    categoryTitles.forEach((btn, idx) => {
+        btn.addEventListener('click', () => {
+            const section = sections[idx];
+            if (currentOpen === section) {
+                showAllCategories();
+                window.scrollTo({top: document.querySelector('.section-title').offsetTop - 10, behavior: 'smooth'});
+            } else {
+                openCategory(section);
+            }
+        });
+    });
+
+    // Search: filter cards and show matching sections
+    searchInput.addEventListener('keyup', function(){
+        let filter = searchInput.value.toLowerCase();
+        let anyMatch = false;
+        sections.forEach(section => {
+            let cards = section.querySelectorAll('.card');
+            let hasVisible = false;
+            cards.forEach(card => {
+                let text = card.innerText.toLowerCase();
+                if (text.includes(filter)) { card.style.display = 'block'; hasVisible = true; anyMatch = true; }
+                else { card.style.display = 'none'; }
+            });
+            section.style.display = hasVisible ? 'block' : 'none';
+            const cl = section.querySelector('.command-list');
+            if (filter.length > 0 && hasVisible && cl) cl.classList.add('active');
+            if (filter.length === 0 && cl) cl.classList.remove('active');
+        });
+        if (filter.length > 0 && anyMatch) {
+            if (commandContainer) commandContainer.classList.add('category-open');
+        }
+        if (filter.length === 0) {
+            if (commandContainer) commandContainer.classList.remove('category-open');
+        }
+    });
+
+    // Generate copy buttons for each card
+    document.querySelectorAll('.card').forEach(card => {
+        const cmd = card.querySelector('.command');
+        if (!cmd) return;
+        const button = document.createElement('button');
+        button.className = 'copy-btn';
+        button.innerText = 'COPY';
+        button.onclick = function () {
+            navigator.clipboard.writeText(cmd.innerText);
+            button.innerText = 'COPIED ✓';
+            button.style.background = '#00ff88';
+            button.style.color = 'black';
+            button.style.boxShadow = '0 0 15px #00ff88';
+            setTimeout(() => {
+                button.innerText = 'COPY';
+                button.style.background = 'red';
+                button.style.boxShadow = 'none';
+            }, 2000);
+        };
+        card.appendChild(button);
+    });
+
+    // If URL has hash, open that category
+    if (location.hash) {
+        const id = location.hash.substring(1);
+        const target = document.getElementById(id);
+        if (target) openCategory(target);
+    }
+});
+// --- JS CHANGES FOR CATEGORY NAVIGATION END ---
+</script>
+</body>
+</html>
